@@ -27,19 +27,25 @@ class AuctionCalculator:
         while True:
             # now find the best response for the first buyer again,
             # we also output the utility of the second buyer if the first buyer bids according to THIS best response
+            old_fb_bids = fb_bids
             fb_utility, sb_counter_utility, fb_bids = self.find_best_response_f(2, sb_bids)
             # if the utility of the second buyer is equal from his earlier best response
             # and this best response of the first buyer, then we have found an equilibrium
             if fb_utility == fb_counter_utility:
                 print('Equilibrium found.')
+                print(old_fb_bids)
+                print(sb_bids)
                 break
             # now find the best response for the second buyer again,
             # we also output the utility of the first buyer if the second buyer bids according to THIS best response
+            old_sb_bids = sb_bids
             sb_utility, fb_counter_utility, sb_bids = self.find_best_response_s(2, fb_bids)
             # if the utility of the first buyer is equal from his earlier best response
             # and this best response of the second buyer, then we have found an equilibrium
             if sb_utility == sb_counter_utility:
                 print('Equilibrium found.')
+                print(fb_bids)
+                print(old_sb_bids)
                 break
 
     def calculate_single(self, k) -> (np.ndarray, np.ndarray):
@@ -79,8 +85,9 @@ class AuctionCalculator:
         # output
         current_second_buyer_items = 0
         for i in range(0, self.num_items, k):
-            print(f"In round {i}, buyer 1 bids {self.sfb[i][current_second_buyer_items]}, buyer 2 bids {self.ssb[i][current_second_buyer_items]}. "
-                  f"Buyer {1 if self.sfb[i][current_second_buyer_items] >= self.ssb[i][current_second_buyer_items] else 2} wins the item.")
+            print(
+                f"In round {i}, buyer 1 bids {self.sfb[i][current_second_buyer_items]}, buyer 2 bids {self.ssb[i][current_second_buyer_items]}. "
+                f"Buyer {1 if self.sfb[i][current_second_buyer_items] >= self.ssb[i][current_second_buyer_items] else 2} wins the item.")
             if self.sfb[i][current_second_buyer_items] < self.ssb[i][current_second_buyer_items]:
                 current_second_buyer_items += k
 
@@ -133,29 +140,35 @@ class AuctionCalculator:
             for j in range(i * k + 1):
                 # index for the path with the best utility,
                 # also means the number of items the second buyer gets in this round
-                max_index = 0
+                max_index = -1
                 # current best utility
-                current_max = 0
+                current_max = -1
                 # the best utility path of the first buyer --> the utility of the second buyer in this path
                 current_su = 0
+                # number of zero bids from the second buyer
+                sb_zeros = len([elem for elem in sb[i * k][j] if elem == 0])
                 # go through all the cases, a means how many items the second buyer gets,
                 # a.k.a which index we need to take
                 # TODO can be refactored
                 for a in range(k + 1):
+                    # first buyer has to get a certain amount of items because of zeros in the second buyers bids
+                    if sb_zeros > k - a:
+                        continue
                     # the first buyer gets 0 items
                     if a == k:
                         current_next = ffu[(i + 1) * k][j + a]
-                        su = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - sum(fb[i * k][j][k - a:k])
+                        # TODO this -1 looks fishy
+                        su = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - (sb[i * k][j][a - 1] - 1) * a
                     # the first buyer gets all items
                     elif a == 0:
                         current_next = ffu[(i + 1) * k][j + a] + \
-                            sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - sum(sb[i * k][j][a:k])
+                                       sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - sum(sb[i * k][j][a:k])
                         su = sfu[(i + 1) * k][j + a]
                     # both buyers get some items
                     else:
                         current_next = ffu[(i + 1) * k][j + a] + \
-                            sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - sum(sb[i * k][j][a:k])
-                        su = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - sum(fb[i * k][j][k - a:k])
+                                       sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - sum(sb[i * k][j][a:k])
+                        su = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - (sb[i * k][j][a - 1] - 1) * a
                     # we got a new best path
                     if current_next > current_max:
                         current_max = current_next
@@ -164,21 +177,24 @@ class AuctionCalculator:
                 # at the end set the forward utilities
                 ffu[i * k][j] = current_max
                 sfu[i * k][j] = current_su
-                # set bids of the first buyer if he got some items, else they are 0
-                if max_index != k:
-                    # currently use identical bids for all items
-                    # THE SAME as the second buyers bid that wants to be overbid
-                    # TODO need to some stuff here. Maybe need to think about bids that make us indifferent about
-                    #  winning and losing?
-                    for a in range(k):
+                # currently use identical bids for all items
+                # THE SAME as the second buyers bid that wants to be overbid
+                # TODO need to some stuff here. Maybe need to think about bids that make us indifferent about
+                #  winning and losing?
+                if max_index == k:
+                    for a in range(k - max_index, k, 1):
+                        fb[i * k][j][a] = sb[i * k][j][max_index - 1] - 1
+                else:
+                    for a in range(k - max_index):
                         fb[i * k][j][a] = sb[i * k][j][max_index]
+                    for a in range(k - max_index, k, 1):
+                        fb[i * k][j][a] = sb[i * k][j][max_index] - 1
 
         # the end utility is the root utility
         fb_utility = ffu[0][0]
         sb_utility = sfu[0][0]
 
         return fb_utility, sb_utility, fb
-
 
     def find_best_response_s(self, k, fb) -> (np.ndarray, np.ndarray):
         """
@@ -196,8 +212,8 @@ class AuctionCalculator:
         for i in range(int(self.num_items / k) - 1, -1, -1):
             for j in range(i * k + 1):
                 # this now obviously is the index of the best path for the second buyer
-                max_index = 0
-                current_max = 0
+                max_index = -1
+                current_max = -1
                 current_fu = 0
                 # also means the items the second buyer has won
                 # TODO pretty sure this is correct but for sure refactorable
@@ -208,11 +224,11 @@ class AuctionCalculator:
                                        sum(fb[i * k][j][k - a:k])
                     elif a == 0:
                         fu = ffu[(i + 1) * k][j + a] + \
-                            sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - sum(sb[i * k][j][a:k])
+                             sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - fb[i * k][j][k - 1] * (k - a)
                         current_next = sfu[(i + 1) * k][j + a]
                     else:
                         fu = ffu[(i + 1) * k][j + a] + \
-                            sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - sum(sb[i * k][j][a:k])
+                             sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - fb[i * k][j][k - a - 1] * (k - a)
                         current_next = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - \
                                        sum(fb[i * k][j][k - a:k])
                     if current_next > current_max:
@@ -221,14 +237,14 @@ class AuctionCalculator:
                         max_index = a
                 ffu[i * k][j] = current_fu
                 sfu[i * k][j] = current_max
-                if max_index != 0:
-                    for a in range(k):
-                        # bid +1 of the first buyer bids that we want to overbid
-                        sb[i * k][j][a] = fb[i * k][j][k - max_index] + 1
+                if max_index == 0:
+                    for a in range(max_index, k, 1):
+                        sb[i * k][j][a] = fb[i * k][j][k - 1]
                 else:
-                    for a in range(k):
-                        # bid 0 if we don't want to beat any first buyer bids
-                        sb[i * k][j][a] = 0
+                    for a in range(max_index):
+                        sb[i * k][j][a] = fb[i * k][j][k - max_index] + 1
+                    for a in range(max_index, k, 1):
+                        sb[i * k][j][a] = fb[i * k][j][k - max_index]
 
         fb_utility = ffu[0][0]
         sb_utility = sfu[0][0]
