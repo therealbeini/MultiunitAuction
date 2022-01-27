@@ -70,8 +70,10 @@ def test():
                         for b in range(0, a + 1):
                             for c in range(0, b + 1):
                                 for d in range(0, c + 1):
-                                    fb_values = np.array([9, 9, 9, 6])
-                                    sb_values = np.array([8, 4, 4, 2])
+                                    fb_values = np.array([i, j, m, n])
+                                    sb_values = np.array([a, b, c, d])
+                                    print(fb_values)
+                                    print(sb_values)
                                     calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
                                                              sb_values=sb_values, k=2)
                                     welfare = 0
@@ -307,4 +309,4 @@ if __name__ == '__main__':
     #     k = input_k()
     #     calculator.calculate_multiple(k)
 
-    test3()
+    test()
