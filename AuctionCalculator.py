@@ -150,11 +150,17 @@ class AuctionCalculator:
                         su = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - (sb[i * k][j][a - 1] - 1) * a
                     # the first buyer gets all items
                     elif a == 0:
+                        # disallow overbidding
+                        if sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) < sum(sb[i * k][j][a:k]):
+                            continue
                         current_next = ffu[(i + 1) * k][j + a] + \
                                        sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - sum(sb[i * k][j][a:k])
                         su = sfu[(i + 1) * k][j + a]
                     # both buyers get some items
                     else:
+                        # disallow overbidding
+                        if sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) < sum(sb[i * k][j][a:k]):
+                            continue
                         current_next = ffu[(i + 1) * k][j + a] + \
                                        sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - sum(sb[i * k][j][a:k])
                         su = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - (sb[i * k][j][a - 1] - 1) * a
@@ -171,10 +177,10 @@ class AuctionCalculator:
                 if max_index != k:
                     for a in range(k - max_index):
                         fb[i * k][j][a] = sb[i * k][j][max_index]
-                # bid -1 of the first bid that wants to be underbid
+                # bid -1 of the first bid that wants to be underbid or real valuation
                 for a in range(k - max_index, k, 1):
                     assert sb[i * k][j][max_index - 1] - 1 >= 0
-                    fb[i * k][j][a] = sb[i * k][j][max_index - 1] - 1
+                    fb[i * k][j][a] = min(sb[i * k][j][max_index - 1] - 1, self.fb_values[i * k - j + a])
 
         # the end utility is the root utility
         fb_utility = ffu[0][0]
@@ -209,10 +215,16 @@ class AuctionCalculator:
                         current_next = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - \
                                        sum(fb[i * k][j][k - a:k])
                     elif a == 0:
+                        # disallow overbidding
+                        if sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) <= fb[i * k][j][k - 1] * (k - a):
+                            continue
                         fu = ffu[(i + 1) * k][j + a] + \
                              sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - fb[i * k][j][k - 1] * (k - a)
                         current_next = sfu[(i + 1) * k][j + a]
                     else:
+                        # disallow overbidding
+                        if sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) <= fb[i * k][j][k - 1] * (k - a):
+                            continue
                         fu = ffu[(i + 1) * k][j + a] + \
                              sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) - fb[i * k][j][k - a - 1] * (k - a)
                         current_next = sfu[(i + 1) * k][j + a] + sum(self.sb_values[j:j + a]) - \
@@ -226,8 +238,9 @@ class AuctionCalculator:
                 if max_index != 0:
                     for a in range(max_index):
                         sb[i * k][j][a] = fb[i * k][j][k - max_index] + 1
+                # no overbidding
                 for a in range(max_index, k, 1):
-                    sb[i * k][j][a] = fb[i * k][j][k - max_index - 1]
+                    sb[i * k][j][a] = min(fb[i * k][j][k - max_index - 1], self.sb_values[j + a])
 
         fb_utility = ffu[0][0]
         sb_utility = sfu[0][0]

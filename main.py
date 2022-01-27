@@ -1,6 +1,5 @@
 import math
 
-import numpy
 import numpy as np
 
 from AuctionCalculator import AuctionCalculator
@@ -152,25 +151,30 @@ def test3():
     a = 1000
     z = 3
     counter = 0
-    for b in numpy.arange(a / z, a + 1, a / z):
-        for c in numpy.arange(b / z, b + 1, b / z):
-            for d in numpy.arange(c / z, c + 1, c / z):
-                for e in numpy.arange(d / z, d + 1, d / z):
-                    for f in numpy.arange(e / z, e + 1, e / z):
+    for b in np.arange(a / z, a + 1, a / z):
+        for c in np.arange(b / z, b + 1, b / z):
+            for d in np.arange(c / z, c + 1, c / z):
+                for e in np.arange(d / z, d + 1, d / z):
+                    for f in np.arange(e / z, e + 1, e / z):
                         # for g in numpy.arange(f / z, f + 1, f / z):
                         #     for h in numpy.arange(g / z, g + 1, g / z):
-                        for i in numpy.arange(a / z, a, a / z):
-                            for j in numpy.arange(i / z + 1, i, i / z):
-                                for k in numpy.arange(j / z, j, j / z):
-                                    for l in numpy.arange(k / z, k, k / z):
-                                        for m in numpy.arange(l / z, l, l / z):
-                                            for n in numpy.arange(m / z, m, m / z):
+                        for i in np.arange(a / z, a, a / z):
+                            for j in np.arange(i / z + 1, i, i / z):
+                                for k in np.arange(j / z, j, j / z):
+                                    for l in np.arange(k / z, k, k / z):
+                                        for m in np.arange(l / z, l, l / z):
+                                            for n in np.arange(m / z, m, m / z):
                                                         # for o in numpy.arange(n / z, n + 1, n / z):
                                                         #     for p in numpy.arange(o / z, o + 1, o / z):
                                                 #fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f), int(g), int(h)])
                                                 #sb_values = np.array([int(i),int(j), int(k), int(l), int(m), int(n), int(o), int(p)])
-                                                fb_values = np.array([1000,333,111,111,74,24])
-                                                sb_values = np.array([333,112,74,49,16,5])
+                                                #fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f)])
+                                                #sb_values = np.array([int(i), int(j), int(k), int(l), int(m), int(n)])
+                                                fb_values = np.array(
+                                                    [1000,333,111,37,24,8])
+                                                sb_values = np.array(
+                                                    [333,223,148,99,33,11])
+
                                                 print(fb_values)
                                                 print(sb_values)
                                                 calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
