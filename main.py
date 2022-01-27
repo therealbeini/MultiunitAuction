@@ -1,3 +1,5 @@
+import math
+
 import numpy
 import numpy as np
 
@@ -92,102 +94,201 @@ def test():
 
 
 def test2():
-    num_items = 8
+    num_items = 6
     min_welfare_ratio = 1.0
     min_fb_values = None
     min_sb_values = None
-    a = 1000
     z = 2
+    a = 5
     counter = 0
-    for a in range(5):
-        for b in range(0, a + 1):
-            for c in range(0, b + 1):
-                for d in range(0, c + 1):
-                    for e in range(d + 1):
-                        for f in range(0, e + 1):
-                            for g in range(0, a + 1):
-                                for h in range(0, g + 1):
-                                    for i in range(h + 1):
-                                        for j in range(0, i + 1):
-                                            for k in range(0, j + 1):
-                                                for l in range(0, k + 1):
-                                                    if counter == 3:
-                                                        print('hi')
-                                                    # fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f), int(g), int(h)])
-                                                    # sb_values = np.array([int(i),int(j), int(k), int(l), int(m), int(n), int(o), int(p)])
-                                                    fb_values = np.array(
-                                                        [int(a), int(b), int(c), int(d), int(e), int(f)])
-                                                    sb_values = np.array(
-                                                        [int(g), int(h), int(i), int(j), int(k), int(l)])
-                                                    calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
-                                                                             sb_values=sb_values, k=2)
-                                                    welfare = 0
-                                                    for x in range(num_items):
-                                                        cur_welfare = sum(fb_values[:x]) + sum(
-                                                            sb_values[:num_items - x])
-                                                        if cur_welfare > welfare:
-                                                            welfare = cur_welfare
-                                                    if welfare == 0:
-                                                        continue
-                                                    utility = calc.find_equilibrium()
-                                                    cur_welfare_ratio = float(utility / welfare)
-                                                    if cur_welfare_ratio < min_welfare_ratio:
-                                                        min_welfare_ratio = cur_welfare_ratio
-                                                        min_fb_values = fb_values
-                                                        min_sb_values = sb_values
-                                                    if counter % 1 == 0:
-                                                        print(counter)
-                                                    counter += 1
+    for b in range(0, a + 1):
+        for c in range(0, b + 1):
+            for d in range(0, c + 1):
+                for e in range(d + 1):
+                    for f in range(0, e + 1):
+                        for g in range(0, a + 1):
+                            for h in range(0, g + 1):
+                                for i in range(0, h + 1):
+                                    for j in range(0, i + 1):
+                                        for k in range(0, j + 1):
+                                            for l in range(0, k + 1):
+                                                # fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f), int(g), int(h)])
+                                                # sb_values = np.array([int(i),int(j), int(k), int(l), int(m), int(n), int(o), int(p)])
+                                                fb_values = np.array(
+                                                    [int(a), int(b), int(c), int(d), int(e), int(f)])
+                                                sb_values = np.array(
+                                                    [int(g), int(h), int(i), int(j), int(k), int(l)])
+                                                calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                                                         sb_values=sb_values, k=2)
+                                                welfare = 0
+                                                for x in range(num_items):
+                                                    cur_welfare = sum(fb_values[:x]) + sum(
+                                                        sb_values[:num_items - x])
+                                                    if cur_welfare > welfare:
+                                                        welfare = cur_welfare
+                                                if welfare == 0:
+                                                    continue
+                                                utility = calc.find_equilibrium()
+                                                cur_welfare_ratio = float(utility / welfare)
+                                                if cur_welfare_ratio < min_welfare_ratio:
+                                                    min_welfare_ratio = cur_welfare_ratio
+                                                    min_fb_values = fb_values
+                                                    min_sb_values = sb_values
+                                                if counter % 100 == 0:
+                                                    print(counter)
+                                                counter += 1
+                                                print(fb_values)
+                                                print(sb_values)
     print(min_welfare_ratio)
     print(min_fb_values)
     print(min_sb_values)
 
 
 def test3():
-    num_items = 8
+    num_items = 6
     min_welfare_ratio = 1.0
     min_fb_values = None
     min_sb_values = None
-    a = 5
-    z = 2
+    a = 1000
+    z = 3
     counter = 0
     for b in numpy.arange(a / z, a + 1, a / z):
         for c in numpy.arange(b / z, b + 1, b / z):
             for d in numpy.arange(c / z, c + 1, c / z):
                 for e in numpy.arange(d / z, d + 1, d / z):
                     for f in numpy.arange(e / z, e + 1, e / z):
-                        for g in numpy.arange(f / z, f + 1, f / z):
-                            for h in numpy.arange(g / z, g + 1, g / z):
-                                for i in numpy.arange(a / z, a, a / z):
-                                    for j in numpy.arange(i / z + 1, i, i / z):
-                                        for k in numpy.arange(j / z, j + 1, j / z):
-                                            for l in numpy.arange(k / z, k + 1, k / z):
-                                                for m in numpy.arange(l / z, l + 1, l / z):
-                                                    for n in numpy.arange(m / z, m + 1, m / z):
-                                                        for o in numpy.arange(n / z, n + 1, n / z):
-                                                            for p in numpy.arange(o / z, o + 1, o / z):
-                                                                fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f), int(g), int(h)])
-                                                                sb_values = np.array([int(i),int(j), int(k), int(l), int(m), int(n), int(o), int(p)])
-                                                                # fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f)])
-                                                                # sb_values = np.array([int(i), int(j), int(k), int(l), int(m), int(n)])
-                                                                calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
-                                                                                         sb_values=sb_values, k=2)
-                                                                welfare = 0
-                                                                for x in range(num_items):
-                                                                    cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
-                                                                    if cur_welfare > welfare:
-                                                                        welfare = cur_welfare
-                                                                if welfare == 0:
-                                                                    continue
-                                                                utility = calc.find_equilibrium()
-                                                                cur_welfare_ratio = float(utility / welfare)
-                                                                if cur_welfare_ratio < min_welfare_ratio:
-                                                                    min_welfare_ratio = cur_welfare_ratio
-                                                                    min_fb_values = fb_values
-                                                                    min_sb_values = sb_values
-                                                                if counter % 100 == 0:
-                                                                    print(counter)
-                                                                counter += 1
+                        # for g in numpy.arange(f / z, f + 1, f / z):
+                        #     for h in numpy.arange(g / z, g + 1, g / z):
+                        for i in numpy.arange(a / z, a, a / z):
+                            for j in numpy.arange(i / z + 1, i, i / z):
+                                for k in numpy.arange(j / z, j, j / z):
+                                    for l in numpy.arange(k / z, k, k / z):
+                                        for m in numpy.arange(l / z, l, l / z):
+                                            for n in numpy.arange(m / z, m, m / z):
+                                                        # for o in numpy.arange(n / z, n + 1, n / z):
+                                                        #     for p in numpy.arange(o / z, o + 1, o / z):
+                                                #fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f), int(g), int(h)])
+                                                #sb_values = np.array([int(i),int(j), int(k), int(l), int(m), int(n), int(o), int(p)])
+                                                fb_values = np.array([1000,333,111,111,74,24])
+                                                sb_values = np.array([333,112,74,49,16,5])
+                                                print(fb_values)
+                                                print(sb_values)
+                                                calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                                                         sb_values=sb_values, k=2)
+                                                welfare = 0
+                                                for x in range(num_items):
+                                                    cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
+                                                    if cur_welfare > welfare:
+                                                        welfare = cur_welfare
+                                                if welfare == 0:
+                                                    continue
+                                                utility = calc.find_equilibrium()
+                                                cur_welfare_ratio = float(utility / welfare)
+                                                if cur_welfare_ratio < min_welfare_ratio:
+                                                    min_welfare_ratio = cur_welfare_ratio
+                                                    min_fb_values = fb_values
+                                                    min_sb_values = sb_values
+                                                if counter % 100 == 0:
+                                                    print(counter)
+                                                counter += 1
+    print(min_welfare_ratio)
+    print(min_fb_values)
+    print(min_sb_values)
+
+def test4():
+    num_items = 8
+    min_welfare_ratio = 1.0
+    min_fb_values = None
+    min_sb_values = None
+    a = 10000
+    counter = 0
+    for i in range(1, 100):
+        fb_values = np.array([a, a, a, a, a, a, a, a])
+        sb_values = np.zeros([8], dtype=int)
+        sb_values[0] = 10000
+        for j in range(1, 8):
+            sb_values[j] = math.floor(sb_values[j - 1] * i / 100)
+        # fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f)])
+        # sb_values = np.array([int(i), int(j), int(k), int(l), int(m), int(n)])
+        calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                 sb_values=sb_values, k=2)
+        welfare = 0
+        for x in range(num_items + 1):
+            cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
+            if cur_welfare > welfare:
+                welfare = cur_welfare
+        if welfare == 0:
+            continue
+        utility = calc.find_equilibrium()
+        cur_welfare_ratio = float(utility / welfare)
+        if cur_welfare_ratio < min_welfare_ratio:
+            min_welfare_ratio = cur_welfare_ratio
+            min_fb_values = fb_values
+            min_sb_values = sb_values
+        counter += 1
+        print(counter)
+    print(min_welfare_ratio)
+    print(min_fb_values)
+    print(min_sb_values)
+
+def test5():
+    num_items = 6
+    min_welfare_ratio = 1.0
+    min_fb_values = None
+    min_sb_values = None
+    z = 3
+    fa = 1000
+    counter = 0
+    for b in range(0, z + 1):
+        fb = math.floor(fa * b / z)
+        for c in range(0, z + 1):
+            fc = math.floor(fb * c / z)
+            for d in range(0, z + 1):
+                fd = math.floor(fc * d / z)
+                for e in range(0, z + 1):
+                    fe = math.floor(fd * e / z)
+                    for f in range(0, z + 1):
+                        ff = math.floor(fe * f / z)
+                        for g in range(0, z + 1):
+                            fg = math.floor(fa * g / z)
+                            for h in range(0, z + 1):
+                                fh = math.floor(fg * h / z)
+                                for i in range(0, z + 1):
+                                    fi = math.floor(fh * i / z)
+                                    for j in range(0, z + 1):
+                                        fj = math.floor(fi * j / z)
+                                        for k in range(0, z + 1):
+                                            fk = math.floor(fj * k / z)
+                                            for l in range(0, z + 1):
+                                                fl = math.floor(fk * l / z)
+                                                # fb_values = np.array([int(a), int(b), int(c), int(d), int(e), int(f), int(g), int(h)])
+                                                # sb_values = np.array([int(i),int(j), int(k), int(l), int(m), int(n), int(o), int(p)])
+                                                fb_values = np.array(
+                                                    [int(fa), int(fb), int(fc), int(fd), int(fe), int(ff)])
+                                                sb_values = np.array(
+                                                    [int(fg), int(fh), int(fi), int(fj), int(fk), int(fl)])
+                                                print(fb_values)
+                                                print(sb_values)
+                                                print(min_welfare_ratio)
+                                                calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                                                         sb_values=sb_values, k=2)
+                                                welfare = 0
+                                                for x in range(num_items):
+                                                    cur_welfare = sum(fb_values[:x]) + sum(
+                                                        sb_values[:num_items - x])
+                                                    if cur_welfare > welfare:
+                                                        welfare = cur_welfare
+                                                if welfare == 0:
+                                                    continue
+                                                utility = calc.find_equilibrium()
+                                                cur_welfare_ratio = float(utility / welfare)
+                                                if cur_welfare_ratio < min_welfare_ratio:
+                                                    min_welfare_ratio = cur_welfare_ratio
+                                                    min_fb_values = fb_values
+                                                    min_sb_values = sb_values
+                                                if counter % 100 == 0:
+                                                    print(counter)
+                                                counter += 1
     print(min_welfare_ratio)
     print(min_fb_values)
     print(min_sb_values)
@@ -202,4 +303,4 @@ if __name__ == '__main__':
     #     k = input_k()
     #     calculator.calculate_multiple(k)
 
-    test()
+    test3()
