@@ -84,35 +84,6 @@ class AuctionCalculator:
             if self.sfb[i][current_second_buyer_items] < self.ssb[i][current_second_buyer_items]:
                 current_second_buyer_items += k
 
-    def calculate_multiple(self, k) -> np.ndarray:
-        """
-        Calculate the bids and utilities for a multi-unit auction with k != 1. Note that we are in the testing phase
-        and our results are based on the (false) assumption that an auction with k != 1 behaves in the same way like
-        a k = 1 auction.
-
-        @param k: number of items sold at the same time
-        @return: the bids of the first buyer under our assumption
-        """
-        # bids of the second buyer
-        fb = np.zeros([self.num_items + 1, self.num_items + 1, k], dtype=int)
-
-        # This code block transforms the bids for a multi-unit auction with k = 1 to the k != 1 auction for the
-        # second buyer. The idea is that any buyer at any point we will bid the same way he would've bid in the k = 1
-        # auction.
-        for i in range(int(self.num_items / k) - 1, -1, -1):
-            for j in range(i * k + 1):
-                # track how many times we have to go right
-                sb_items = 0
-                for a in range(k):
-                    fb[i * k][j][a] = self.sfb[i * k + a][j + sb_items]
-                    # second buyer has won the item
-                    if self.ssb[i * k][j] > self.sfb[i * k][j]:
-                        sb_items += 1
-                # sort at the end to have the highest bid at the beginning
-                fb[i * k][j][::-1].sort()
-
-        return fb
-
     def find_best_response_f(self, k, sb) -> (np.ndarray, np.ndarray):
         """
         Find the best response of the first buyer given the bids of the second buyer.
@@ -227,7 +198,7 @@ class AuctionCalculator:
                     if self.sb_values[j + a] > self.fb_values[(i * k) - j + k - 1 - a]:
                         unlosable_zeros += 1
                 # also means the items the second buyer has won
-                for a in range(k + 1):
+                for a in range(k, -1, -1):
                     if unlosable_zeros > a:
                         continue
                     if a == 0:
