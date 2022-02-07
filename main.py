@@ -70,8 +70,8 @@ def test():
                         for b in range(0, a + 1):
                             for c in range(0, b + 1):
                                 for d in range(0, c + 1):
-                                    fb_values = np.array([i, j, m, n])
-                                    sb_values = np.array([a, b, c, d])
+                                    fb_values = np.array([2,2,0,0])
+                                    sb_values = np.array([5,5,5,0])
                                     print(fb_values)
                                     print(sb_values)
                                     calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
@@ -299,14 +299,43 @@ def test5():
     print(min_fb_values)
     print(min_sb_values)
 
+def vcg_test():
+    num_items = 4
+    min_welfare_ratio = 1.0
+    min_fb_values = None
+    min_sb_values = None
+    for i in range(10):
+        for j in range(0, i + 1):
+            for m in range(0, j + 1):
+                for n in range(0, m + 1):
+                    for a in range(10):
+                        for b in range(0, a + 1):
+                            for c in range(0, b + 1):
+                                for d in range(0, c + 1):
+                                    fb_values = np.array([5,5,0,0])
+                                    sb_values = np.array([9,9,9,9])
+                                    print(fb_values)
+                                    print(sb_values)
+                                    calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                                             sb_values=sb_values, k=2)
+                                    current_welfare = calc.get_vcg_prices(k=2)
+                                    max_welfare = 0
+                                    for x in range(num_items):
+                                        cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
+                                        if cur_welfare > max_welfare:
+                                            max_welfare = cur_welfare
+                                    if max_welfare == 0:
+                                        continue
+                                    cur_welfare_ratio = float(current_welfare / max_welfare)
+                                    if cur_welfare_ratio < min_welfare_ratio:
+                                        min_welfare_ratio = cur_welfare_ratio
+                                        min_fb_values = fb_values
+                                        min_sb_values = sb_values
+
+    print(min_welfare_ratio)
+    print(min_fb_values)
+    print(min_sb_values)
+
 
 if __name__ == '__main__':
-    # num_items = input_num_items()
-    # fb_values = input_buyer_valuations(num_items, 1)
-    # sb_values = input_buyer_valuations(num_items, 2)
-    # calculator = AuctionCalculator(num_items=num_items, fb_values=fb_values, sb_values=sb_values)
-    # while True:
-    #     k = input_k()
-    #     calculator.calculate_multiple(k)
-
-    test()
+    vcg_test()
