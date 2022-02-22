@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 
@@ -59,25 +61,34 @@ class AuctionCalculator:
                 sfu[i * k][j] = max_s_utility - s_price
 
         reachable = np.zeros([self.num_items + 1, self.num_items + 1], dtype=bool)
-        self.get_vcg_optimal_welfare(possible_path, reachable, 0, 0)
+        lowest = np.full([self.num_items + 1, self.num_items + 1], np.inf, dtype=int)
+        self.get_vcg_optimal_welfare(possible_path, f_prices, s_prices, lowest, reachable)
 
-        max_welfare = -1
-        max_index = -1
+        min_welfare = math.inf
+        min_index = -1
         for j in range(self.num_items + 1):
             if reachable[self.num_items][j]:
                 current_welfare = sum(self.fb_values[:self.num_items - j]) + sum(self.sb_values[:j])
-                if current_welfare > max_welfare:
-                    max_welfare = current_welfare
-                    max_index = j
+                if current_welfare < min_welfare:
+                    min_welfare = current_welfare
+                    min_index = j
 
-        print(f'Welfare is {max_welfare}, buyer 1 gets {self.num_items - max_index} items and buyer 2 gets {max_index} items')
-        return max_welfare
+        #print(f'Welfare is {max_welfare}, buyer 1 gets {self.num_items - max_index} items and buyer 2 gets {max_index} items')
+        return min_welfare
 
-    def get_vcg_optimal_welfare(self, possible_path, reachable, row, column):
-        for a in range(self.k + 1):
-            if possible_path[row][column][a] and not reachable[row + self.k][column + a]:
-                reachable[row + self.k][column + a] = True
-                self.get_vcg_optimal_welfare(possible_path, reachable, row + self.k, column + a)
+    def get_vcg_optimal_welfare(self, possible_path, f_prices, s_prices, lowest, reachable):
+        for i in range(int(self.num_items / self.k + 1)):
+            for j in range(i * self.k + 1):
+                for a in range(self.k + 1):
+                    if possible_path[i][j][a] and not reachable[i + self.k][j + a]:
+                        if lowest[i][j] < f_prices[i][j] / self.k * (self.k - a) \
+                                or lowest[i][j] < s_prices[i][j] / self.k * a:
+                            print('hi')
+                        reachable[i + self.k][j + a] = True
+                        if lowest[i + self.k][j + a] > f_prices[i][j] / self.k * (self.k - a):
+                            lowest[i + self.k][j + a] = f_prices[i][j] / self.k * (self.k - a)
+                        if lowest[i + self.k][j + a] > s_prices[i][j] / self.k * a:
+                            lowest[i + self.k][j + a] = s_prices[i][j] / self.k * a
 
 
 

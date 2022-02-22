@@ -1,4 +1,5 @@
 import math
+import random
 
 import numpy as np
 
@@ -336,6 +337,88 @@ def vcg_test():
     print(min_fb_values)
     print(min_sb_values)
 
+def random_test():
+    num_items = 10
+    min_welfare_ratio = 1.0
+    min_fb_values = None
+    min_sb_values = None
+    count = 0
+    while True:
+        fb_values = np.empty(10)
+        sb_values = np.empty(10)
+        for i in range(10):
+            fb_values[i] = random.randint(0, 100)
+            sb_values[i] = random.randint(0, 100)
+        fb_values[::-1].sort()
+        sb_values[::-1].sort()
+        calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                 sb_values=sb_values, k=2)
+        current_welfare = calc.get_vcg_prices(k=2)
+        max_welfare = 0
+        for x in range(num_items):
+            cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
+            if cur_welfare > max_welfare:
+                max_welfare = cur_welfare
+        if max_welfare == 0:
+            continue
+        cur_welfare_ratio = float(current_welfare / max_welfare)
+        if cur_welfare_ratio < min_welfare_ratio:
+            min_welfare_ratio = cur_welfare_ratio
+            min_fb_values = fb_values
+            min_sb_values = sb_values
+
+        if count % 1000 == 0:
+            print(min_welfare_ratio)
+            print(min_fb_values)
+            print(min_sb_values)
+
+        count += 1
+
+def gaussian_test():
+    mu, sigma = 100, 5
+    factor = 1 - (1/math.e)
+    max_bid = 100
+    num_items = 10
+    min_welfare_ratio = 1.0
+    min_fb_values = None
+    min_sb_values = None
+    count = 0
+    while True:
+        sb_values = np.empty(100)
+        fb_values = np.random.normal(mu, sigma, 100)
+        for i in range(100):
+            if fb_values[i] > 100:
+                fb_values[i] = round(100 + (100 - fb_values[i]))
+            else:
+                fb_values[i] = round(fb_values[i])
+            fb_values[i] = 100
+            base = max_bid - ((max_bid - max_bid * factor) / ((100 - i) / 100))
+            sb_values[i] = int(max(0, min(100, round(np.random.normal(max(base, 0), sigma, 1)[0]))))
+            sb_values[i] = int(max(0,round(base)))
+        fb_values[::-1].sort()
+        sb_values[::-1].sort()
+        calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                 sb_values=sb_values, k=2)
+        current_welfare = calc.get_vcg_prices(k=2)
+        max_welfare = 0
+        for x in range(num_items):
+            cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
+            if cur_welfare > max_welfare:
+                max_welfare = cur_welfare
+        if max_welfare == 0:
+            continue
+        cur_welfare_ratio = float(current_welfare / max_welfare)
+        if cur_welfare_ratio < min_welfare_ratio:
+            min_welfare_ratio = cur_welfare_ratio
+            min_fb_values = fb_values
+            min_sb_values = sb_values
+
+        if count % 1000 == 0:
+            print(min_welfare_ratio)
+            print(min_fb_values)
+            print(min_sb_values)
+
+        count += 1
 
 if __name__ == '__main__':
-    vcg_test()
+    gaussian_test()
