@@ -2,8 +2,20 @@ import math
 import random
 
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+from numpy import asarray as ar,exp
 
 from AuctionCalculator import AuctionCalculator
+
+import sqlite3
+con = sqlite3.connect('promille.db')
+
+cur = con.cursor()
+
+# Create table
+cur.execute('''CREATE TABLE IF NOT EXISTS promilles_3_buyers_10_items
+               (promille integer, count integer)''')
 
 
 def input_k():
@@ -71,8 +83,8 @@ def test():
                         for b in range(0, a + 1):
                             for c in range(0, b + 1):
                                 for d in range(0, c + 1):
-                                    fb_values = np.array([2,2,0,0])
-                                    sb_values = np.array([5,5,5,0])
+                                    fb_values = np.array([i,j,m,n])
+                                    sb_values = np.array([a,b,c,d])
                                     print(fb_values)
                                     print(sb_values)
                                     calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
@@ -343,12 +355,13 @@ def random_test():
     min_fb_values = None
     min_sb_values = None
     count = 0
+    promilles = np.zeros(1001)
     while True:
         fb_values = np.empty(10)
         sb_values = np.empty(10)
         for i in range(10):
-            fb_values[i] = random.randint(0, 100)
-            sb_values[i] = random.randint(0, 100)
+            fb_values[i] = random.randint(0, 1000)
+            sb_values[i] = random.randint(0, 1000)
         fb_values[::-1].sort()
         sb_values[::-1].sort()
         calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
@@ -367,10 +380,121 @@ def random_test():
             min_fb_values = fb_values
             min_sb_values = sb_values
 
+        promilles[math.ceil(cur_welfare_ratio * 1000)] += 1
+
         if count % 1000 == 0:
             print(min_welfare_ratio)
             print(min_fb_values)
             print(min_sb_values)
+            for i in range(1000):
+                cur.execute("SELECT * FROM promilles_1000 WHERE promille=?", (i,))
+                row = cur.fetchone()
+                if row is None:
+                    cur.execute('INSERT INTO promilles_1000 values(?,?)', (i, promilles[i]))
+                else:
+                    new_count = row[1] + promilles[i]
+                    cur.execute('''UPDATE promilles_1000 SET count = ? WHERE promille= ? ''', (new_count, i))
+            con.commit()
+
+        count += 1
+
+def random_new_test():
+    num_items = 10
+    min_welfare_ratio = 1.0
+    min_fb_values = None
+    min_sb_values = None
+    count = 0
+    promilles = np.zeros(1001)
+    while True:
+        fb_values = np.empty(10)
+        sb_values = np.empty(10)
+        for i in range(10):
+            fb_values[i] = random.randint(0, 1000)
+            sb_values[i] = random.randint(0, 1000)
+        fb_values[::-1].sort()
+        sb_values[::-1].sort()
+        calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                 sb_values=sb_values, k=2)
+        current_welfare = calc.get_vcg_prices(k=2)
+        max_welfare = 0
+        for x in range(num_items):
+            cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
+            if cur_welfare > max_welfare:
+                max_welfare = cur_welfare
+        if max_welfare == 0:
+            continue
+        cur_welfare_ratio = float(current_welfare / max_welfare)
+        if cur_welfare_ratio < min_welfare_ratio:
+            min_welfare_ratio = cur_welfare_ratio
+            min_fb_values = fb_values
+            min_sb_values = sb_values
+
+        promilles[math.ceil(cur_welfare_ratio * 1000)] += 1
+
+        if count % 1000 == 0:
+            print(min_welfare_ratio)
+            print(min_fb_values)
+            print(min_sb_values)
+            for i in range(1000):
+                cur.execute("SELECT * FROM promilles_new_10 WHERE promille=?", (i,))
+                row = cur.fetchone()
+                if row is None:
+                    cur.execute('INSERT INTO promilles_new_10 values(?,?)', (i, promilles[i]))
+                else:
+                    new_count = row[1] + promilles[i]
+                    cur.execute('''UPDATE promilles_new_10 SET count = ? WHERE promille= ? ''', (new_count, i))
+            con.commit()
+            promilles = np.zeros(1001)
+
+        count += 1
+
+def random_3_test():
+    num_items = 99
+    min_welfare_ratio = 1.0
+    min_fb_values = None
+    min_sb_values = None
+    count = 0
+    promilles = np.zeros(1001)
+    while True:
+        fb_values = np.empty(99)
+        sb_values = np.empty(99)
+        for i in range(99):
+            fb_values[i] = random.randint(0, 1000)
+            sb_values[i] = random.randint(0, 1000)
+        fb_values[::-1].sort()
+        sb_values[::-1].sort()
+        calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                 sb_values=sb_values, k=3)
+        current_welfare = calc.get_vcg_prices(k=3)
+        max_welfare = 0
+        for x in range(num_items):
+            cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
+            if cur_welfare > max_welfare:
+                max_welfare = cur_welfare
+        if max_welfare == 0:
+            continue
+        cur_welfare_ratio = float(current_welfare / max_welfare)
+        if cur_welfare_ratio < min_welfare_ratio:
+            min_welfare_ratio = cur_welfare_ratio
+            min_fb_values = fb_values
+            min_sb_values = sb_values
+
+        promilles[math.ceil(cur_welfare_ratio * 1000)] += 1
+
+        if count % 1000 == 0:
+            print(min_welfare_ratio)
+            print(min_fb_values)
+            print(min_sb_values)
+            for i in range(1000):
+                cur.execute("SELECT * FROM promilles_3_99 WHERE promille=?", (i,))
+                row = cur.fetchone()
+                if row is None:
+                    cur.execute('INSERT INTO promilles_3_99 values(?,?)', (i, promilles[i]))
+                else:
+                    new_count = row[1] + promilles[i]
+                    cur.execute('''UPDATE promilles_3_99 SET count = ? WHERE promille= ? ''', (new_count, i))
+            con.commit()
+            promilles = np.zeros(1001)
 
         count += 1
 
@@ -378,30 +502,26 @@ def gaussian_test():
     mu, sigma = 100, 5
     factor = 1 - (1/math.e)
     max_bid = 100
-    num_items = 10
+    num_items = 100
     min_welfare_ratio = 1.0
     min_fb_values = None
     min_sb_values = None
     count = 0
+    promilles = np.zeros(1001)
     while True:
         sb_values = np.empty(100)
         fb_values = np.random.normal(mu, sigma, 100)
         for i in range(100):
-            if fb_values[i] > 100:
-                fb_values[i] = round(100 + (100 - fb_values[i]))
-            else:
-                fb_values[i] = round(fb_values[i])
             fb_values[i] = 100
             base = max_bid - ((max_bid - max_bid * factor) / ((100 - i) / 100))
             sb_values[i] = int(max(0, min(100, round(np.random.normal(max(base, 0), sigma, 1)[0]))))
-            sb_values[i] = int(max(0,round(base)))
         fb_values[::-1].sort()
         sb_values[::-1].sort()
         calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
                                  sb_values=sb_values, k=2)
         current_welfare = calc.get_vcg_prices(k=2)
         max_welfare = 0
-        for x in range(num_items):
+        for x in range(num_items + 1):
             cur_welfare = sum(fb_values[:x]) + sum(sb_values[:num_items - x])
             if cur_welfare > max_welfare:
                 max_welfare = cur_welfare
@@ -413,12 +533,170 @@ def gaussian_test():
             min_fb_values = fb_values
             min_sb_values = sb_values
 
+        promilles[math.ceil(cur_welfare_ratio * 1000)] += 1
+
+        if count % 100 == 0:
+            print(min_welfare_ratio)
+            for i in range(1000):
+                cur.execute("SELECT * FROM promilles_gaussian_1000 WHERE promille=?", (i,))
+                row = cur.fetchone()
+                if row is None:
+                    cur.execute('INSERT INTO promilles_gaussian_1000 values(?,?)', (i, promilles[i]))
+                else:
+                    new_count = row[1] + promilles[i]
+                    cur.execute('''UPDATE promilles_gaussian_1000 SET count = ? WHERE promille= ? ''', (new_count, i))
+            con.commit()
+            promilles = np.zeros(1001)
+
+        count += 1
+
+def draw_histogram():
+    cur.execute("SELECT * FROM promilles")
+    data = cur.fetchall()
+    histo = np.zeros(200)
+    label = np.zeros(200)
+    sum = 0
+    for i in range(800, 1000, 1):
+        sum += data[i][1]
+        label[i - 800] = i
+    for e in data:
+        if e[0] < 800: continue
+        histo[e[0] - 800] = e[1] / sum
+    plt.bar(label, histo, alpha=0.5, label=f'100items, 189511663226 samples')
+
+    cur.execute("SELECT * FROM promilles_1000")
+    data = cur.fetchall()
+    histo = np.zeros(200)
+    label = np.zeros(200)
+    sum = 0
+    for i in range(800, 1000, 1):
+        sum += data[i][1]
+        label[i - 800] = i
+    for e in data:
+        if e[0] < 800: continue
+        histo[e[0] - 800] = e[1] / sum
+    plt.bar(label, histo, alpha=0.5, label=f'1000items, {sum} samples')
+    plt.legend(loc='upper left')
+    plt.savefig('promille_overlayed_zoomed.png')
+    plt.show()
+
+def fit_gaussian():
+    cur.execute("SELECT * FROM promilles_new_10")
+    data = cur.fetchall()
+    x = np.arange(len(data))
+    y = np.empty(len(data))
+    samples = 0
+    for i in range(len(data)):
+        samples += int(data[i][1])
+        y[i] = int(data[i][1])
+    # weighted arithmetic mean (corrected - check the section below)
+    mean = sum(x * y) / sum(y)
+    sigma = np.sqrt(sum(y * (x - mean) ** 2) / sum(y))
+
+    def Gauss(x, a, x0, sigma):
+        return a * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
+
+    popt, pcov = curve_fit(Gauss, x, y, p0=[max(y), mean, sigma])
+
+    plt.plot(x, y, 'b+:', label=f'data, {samples} samples')
+    plt.plot(x, Gauss(x, *popt), 'r-', label=f"fit, sigma = {round(sigma, 3)}, mean = {round(mean, 3)}")
+    plt.legend()
+    plt.title('Welfare for n=10 and k=2')
+    plt.xlabel('Welfare in promille')
+    plt.ylabel('Total frequency')
+    plt.savefig('2_10_fit_to_gaussian.png')
+    plt.show()
+
+def random_new_new_test():
+    num_items = 10
+    min_welfare_ratio = 1.0
+    min_fb_values = None
+    min_sb_values = None
+    count = 0
+    promilles = np.zeros(1001)
+    while True:
+        fb_values = np.empty(10)
+        sb_values = np.empty(10)
+        for i in range(10):
+            fb_values[i] = random.randint(0, 1000)
+            sb_values[i] = random.randint(0, 1000)
+        fb_values[::-1].sort()
+        sb_values[::-1].sort()
+        calc = AuctionCalculator(num_items=num_items, fb_values=fb_values,
+                                 sb_values=sb_values, k=2)
+        current_welfare = calc.get_vcg_prices(k=2)
+        combined = np.concatenate((fb_values, sb_values),axis=None)
+        combined[::-1].sort()
+        max_welfare = sum(combined[:num_items])
+        if max_welfare == 0:
+            continue
+        cur_welfare_ratio = float(current_welfare / max_welfare)
+        if cur_welfare_ratio < min_welfare_ratio:
+            min_welfare_ratio = cur_welfare_ratio
+            min_fb_values = fb_values
+            min_sb_values = sb_values
+
+        promilles[math.ceil(cur_welfare_ratio * 1000)] += 1
+
         if count % 1000 == 0:
             print(min_welfare_ratio)
             print(min_fb_values)
             print(min_sb_values)
+            for i in range(1000):
+                cur.execute("SELECT * FROM promilles_new_new_10 WHERE promille=?", (i,))
+                row = cur.fetchone()
+                if row is None:
+                    cur.execute('INSERT INTO promilles_new_new_10 values(?,?)', (i, promilles[i]))
+                else:
+                    new_count = row[1] + promilles[i]
+                    cur.execute('''UPDATE promilles_new_new_10 SET count = ? WHERE promille= ? ''', (new_count, i))
+            con.commit()
+            promilles = np.zeros(1001)
 
         count += 1
 
+def random_3_buyer_test():
+    num_items = 10
+    buyers = 3
+    min_welfare_ratio = 1.0
+    count = 0
+    promilles = np.zeros(1001)
+    while True:
+        values = np.empty((buyers, num_items), dtype=int)
+        for i in range(buyers):
+            for j in range(num_items):
+                values[i][j] = random.randint(0, 1000)
+            values[i][::-1].sort()
+        #values = [[8,7,7,3],[6,2,2,1],[6,4,2,1]]
+        calc = AuctionCalculator(num_items=num_items, values=values, k=2, num_buyers=buyers)
+        current_welfare = calc.get_vcg_prices_for_3_or_more_buyers(k=2)
+        flat_array = values.flatten()
+        flat_array[::-1].sort()
+        max_welfare = sum(flat_array[:num_items])
+        cur_welfare_ratio = float(current_welfare / max_welfare)
+        if cur_welfare_ratio < min_welfare_ratio:
+            min_welfare_ratio = cur_welfare_ratio
+
+        promilles[math.ceil(cur_welfare_ratio * 1000)] += 1
+
+        if count % 10 == 0:
+            print(min_welfare_ratio)
+            for i in range(1000):
+                cur.execute("SELECT * FROM promilles_3_buyers_10_items WHERE promille=?", (i,))
+                row = cur.fetchone()
+                if row is None:
+                    cur.execute('INSERT INTO promilles_3_buyers_10_items values(?,?)', (i, promilles[i]))
+                else:
+                    new_count = row[1] + promilles[i]
+                    cur.execute('''UPDATE promilles_3_buyers_10_items SET count = ? WHERE promille= ? ''', (new_count, i))
+            con.commit()
+            promilles = np.zeros(1001)
+
+        count += 1
+
+
 if __name__ == '__main__':
-    gaussian_test()
+    #calc = AuctionCalculator(num_items=8, values=[[4,3,2,1,1,1,1,1],[4,4,4,4,2,2,2,2],[2,2,2,2,2,2,2,2]], k=2, num_buyers=3)
+    #calc.get_vcg_prices_for_3_or_more_buyers(2)
+    #random_3_buyer_test()
+    random_3_buyer_test()

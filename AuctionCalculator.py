@@ -1,18 +1,34 @@
 import math
+from bisect import bisect_right, bisect_left, bisect
 
 import numpy as np
 
 
 class AuctionCalculator:
-    def __init__(self, num_items=None, fb_values=None, sb_values=None, k=None):
+    def __init__(self, num_items=None, fb_values=None, sb_values=None, k=None, num_buyers=2):
         self.num_items = num_items
         self.k = k
+        self.num_buyers = num_buyers
         # valuations
         self.fb_values = fb_values
         self.sb_values = sb_values
         # bids for multi-unit auction with k = 1
         self.sfb = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
         self.ssb = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
+        # combinational table initialization
+        #self.table = self.build_combinatorial_table()
+
+    def __init__(self, num_items=None, values=None, k=None, num_buyers=2):
+        self.num_items = num_items
+        self.k = k
+        self.num_buyers = num_buyers
+        # valuations
+        self.values = values
+        # bids for multi-unit auction with k = 1
+        self.sfb = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
+        self.ssb = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
+        # combinational table initialization
+        self.table = self.build_combinatorial_table()
 
     def get_vcg_prices(self, k) -> int:
         # forward utilities
@@ -43,9 +59,9 @@ class AuctionCalculator:
                         max_utility = current_utility
                         max_f_utility = f_utility
                         max_s_utility = s_utility
-                    if f_utility > max_without_s_utility:
+                    if a == 0 and f_utility > max_without_s_utility:
                         max_without_s_utility = f_utility
-                    if s_utility > max_without_f_utility:
+                    elif a == k and s_utility > max_without_f_utility:
                         max_without_f_utility = s_utility
                 for a in range(k + 1):
                     f_utility = sum(self.fb_values[(i * k) - j:(i * k) - j + (k - a)]) + ffu[(i + 1) * k][j + a]
@@ -61,7 +77,7 @@ class AuctionCalculator:
                 sfu[i * k][j] = max_s_utility - s_price
 
         reachable = np.zeros([self.num_items + 1, self.num_items + 1], dtype=bool)
-        lowest = np.full([self.num_items + 1, self.num_items + 1], np.inf, dtype=int)
+        lowest = np.full([self.num_items + 1, self.num_items + 1], np.inf)
         self.get_vcg_optimal_welfare(possible_path, f_prices, s_prices, lowest, reachable)
 
         min_welfare = math.inf
@@ -77,21 +93,159 @@ class AuctionCalculator:
         return min_welfare
 
     def get_vcg_optimal_welfare(self, possible_path, f_prices, s_prices, lowest, reachable):
-        for i in range(int(self.num_items / self.k + 1)):
-            for j in range(i * self.k + 1):
+        reachable[0][0] = True
+        for i in range(0, self.num_items - self.k + 1, self.k):
+            for j in range(i + 1):
                 for a in range(self.k + 1):
-                    if possible_path[i][j][a] and not reachable[i + self.k][j + a]:
-                        if lowest[i][j] < f_prices[i][j] / self.k * (self.k - a) \
-                                or lowest[i][j] < s_prices[i][j] / self.k * a:
-                            print('hi')
+                    if reachable[i][j] and possible_path[i][j][a]:
+                        price = f_prices[i][j] + s_prices[i][j]
+                        if lowest[i][j] < price:
+                            print('Higher price detected.')
+                            print(self.values)
+                            exit()
                         reachable[i + self.k][j + a] = True
-                        if lowest[i + self.k][j + a] > f_prices[i][j] / self.k * (self.k - a):
-                            lowest[i + self.k][j + a] = f_prices[i][j] / self.k * (self.k - a)
-                        if lowest[i + self.k][j + a] > s_prices[i][j] / self.k * a:
-                            lowest[i + self.k][j + a] = s_prices[i][j] / self.k * a
+                        if lowest[i + self.k][j + a] > price:
+                            lowest[i + self.k][j + a] = price
 
+    def get_vcg_prices_for_3_or_more_buyers(self, k) -> int:
+        # amount of permutations
+        permutations = self.table[self.num_buyers][self.num_items]
 
+        # forward utility array
+        fu = np.zeros([self.num_items + 1, permutations, self.num_buyers], dtype=int)
 
+        # VCG prices
+        prices = np.zeros([self.num_items + 1, permutations, self.num_buyers], dtype=int)
+
+        # path for lowest welfare finding
+        possible_path = np.zeros([self.num_items + 1, permutations, self.table[self.num_buyers][k]], dtype=bool)
+
+        # traverse the tree from the bottom
+        for i in range(int(self.num_items / k) - 1, -1, -1):
+            # traverse the tree from left to right
+            for j in range(max(1, self.table[self.num_buyers][i * k])):
+                sold_distr = self.convert_index_to_distribution(j, i * k)
+                sold_occurrences = np.zeros(self.num_buyers, dtype=int)
+                for num in sold_distr:
+                    sold_occurrences[num] += 1
+                # max utility for this node
+                max_utility = -1
+                # utilities of individual buyers in max utility case
+                max_individual_utility = np.zeros(self.num_buyers)
+                # utilities without certain buyer in max utility case
+                max_without_utility = np.zeros(self.num_buyers)
+                # loop through distributions
+                for a in range(self.table[self.num_buyers][k]):
+                    distr = self.convert_index_to_distribution(a, k)
+                    occurrences = np.zeros(self.num_buyers, dtype=int)
+                    for num in distr:
+                        occurrences[num] += 1
+                    # the index of the next node
+                    next_index = self.convert_distribution_to_index(np.sort(np.concatenate((distr, sold_distr), axis=None)))
+                    utilities = np.zeros(self.num_buyers, dtype=int)
+                    # calculate utilities for individual buyers
+                    for b in range(self.num_buyers):
+                        utilities[b] = sum(self.values[b][sold_occurrences[b]:sold_occurrences[b] + occurrences[b]]) + \
+                                       fu[(i + 1) * k][next_index][b]
+                    current_utility = sum(utilities)
+                    if current_utility > max_utility:
+                        max_utility = current_utility
+                        # set max utility of individual buyers for the max utility case
+                        for b in range(self.num_buyers):
+                            max_individual_utility[b] = utilities[b]
+                    for b in range(self.num_buyers):
+                        max_without_current_utility = current_utility - utilities[b]
+                        if occurrences[b] == 0 and max_without_current_utility > max_without_utility[b]:
+                            max_without_utility[b] = max_without_current_utility
+                for a in range(self.table[self.num_buyers][k]):
+                    distr = self.convert_index_to_distribution(a, k)
+                    occurrences = np.zeros(self.num_buyers, dtype=int)
+                    for num in distr:
+                        occurrences[num] += 1
+                    # the index of the next node
+                    next_index = self.convert_distribution_to_index(np.sort(np.concatenate((distr, sold_distr), axis=None)))
+                    utilities = np.zeros(self.num_buyers, dtype=int)
+                    # calculate utilities for individual buyers
+                    for b in range(self.num_buyers):
+                        utilities[b] = sum(self.values[b][sold_occurrences[b]:sold_occurrences[b] + occurrences[b]]) + \
+                                       fu[(i + 1) * k][next_index][b]
+                    current_utility = sum(utilities)
+                    if current_utility == max_utility:
+                        possible_path[i * k][j][a] = True
+                for b in range(self.num_buyers):
+                    price = max_individual_utility[b] - (max_utility - max_without_utility[b])
+                    prices[i * k][j][b] = price
+                    fu[i * k][j][b] = max_individual_utility[b] - price
+        #print(possible_path)
+
+        reachable = np.zeros([self.num_items + 1, permutations], dtype=bool)
+        lowest = np.full([self.num_items + 1, permutations], np.inf)
+        self.get_vcg_optimal_welfare_for_3_or_more_buyers(possible_path, prices, lowest, reachable)
+
+        min_welfare = math.inf
+        for j in range(permutations):
+            if reachable[self.num_items][j]:
+                distr = self.convert_index_to_distribution(j, self.num_items)
+                occurrences = np.zeros(self.num_buyers, dtype=int)
+                for num in distr:
+                    occurrences[num] += 1
+                current_welfare = 0
+                for b in range(self.num_buyers):
+                    current_welfare += sum(self.values[b][:occurrences[b]])
+                if current_welfare < min_welfare:
+                    min_welfare = current_welfare
+
+        #print(min_welfare)
+        return min_welfare
+
+    def get_vcg_optimal_welfare_for_3_or_more_buyers(self, possible_path, prices, lowest, reachable):
+        reachable[0][0] = True
+        for i in range(0, self.num_items - self.k + 1, self.k):
+            for j in range(max(1, self.table[self.num_buyers][i])):
+                sold_distr = self.convert_index_to_distribution(j, i)
+                for a in range(self.table[self.num_buyers][self.k]):
+                    distr = self.convert_index_to_distribution(a, self.k)
+                    total_distr = np.sort(np.concatenate((sold_distr, distr), axis=None))
+                    next_index = self.convert_distribution_to_index(total_distr)
+                    if reachable[i][j] and possible_path[i][j][a]:
+                        price = sum(prices[i][j])
+                        # if lowest[i][j] < price:
+                        #     print('Higher price detected.')
+                        #     print(self.values)
+                        #     exit()
+                        reachable[i + self.k][next_index] = True
+                        if lowest[i + self.k][next_index] > price:
+                            lowest[i + self.k][next_index] = price
+
+    def build_combinatorial_table(self):
+        table = np.zeros([self.num_buyers + 1, self.num_items + 1], dtype=int)
+        for n in range(1, self.num_buyers + 1):
+            for m in range(1, self.num_items + 1):
+                table[n, m] = math.factorial(m + n - 1) / (math.factorial(m) * math.factorial(n - 1))
+        #print(table)
+        return table
+
+    def convert_distribution_to_index(self, distr):
+        #print(distr)
+        current_items = len(distr)
+        index = 0
+        for i in range(current_items):
+            index += self.table[self.num_buyers - distr[i] - 1][current_items - i]
+        index = self.table[self.num_buyers][current_items] - index - 1
+        #print(index)
+        return index
+
+    def convert_index_to_distribution(self, index, current_items):
+        #print(index)
+        index = self.table[self.num_buyers][current_items] - index - 1
+        distr = np.zeros(current_items, dtype=int)
+        for i in range(current_items, 0, -1):
+            buyer_index = bisect(self.table[:, i], index) - 1
+            searched_value = self.table[buyer_index][i]
+            distr[current_items - i] = self.num_buyers - 1 - buyer_index
+            index -= searched_value
+        #print(distr)
+        return distr
 
     def find_equilibrium(self) -> int:
         # first calculate the result of the k = 1 auction,
