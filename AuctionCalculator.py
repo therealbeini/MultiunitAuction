@@ -6,35 +6,25 @@ import numpy as np
 
 class AuctionCalculator:
 
-    dpa_true = 0
-    dpa_false = 0
-
-    def __init__(self, num_items=None, fb_values=None, sb_values=None, k=None, num_buyers=2):
+    def __init__(self, num_items=None, fb_values=None, sb_values=None, values=None, k=None, num_buyers=2):
         self.num_items = num_items
         self.k = k
         self.num_buyers = num_buyers
         # valuations
         self.fb_values = fb_values
         self.sb_values = sb_values
+        # valuations for 3+ buyers
+        self.values = values
         # bids for multi-unit auction with k = 1
         self.sfb = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
         self.ssb = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
         # combinational table initialization
-        #self.table = self.build_combinatorial_table()
-
-    # def __init__(self, num_items=None, values=None, k=None, num_buyers=2):
-    #     self.num_items = num_items
-    #     self.k = k
-    #     self.num_buyers = num_buyers
-    #     # valuations
-    #     self.values = values
-    #     # bids for multi-unit auction with k = 1
-    #     self.sfb = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
-    #     self.ssb = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
-    #     # combinational table initialization
-    #     self.table = self.build_combinatorial_table()
+        self.table = self.build_combinatorial_table()
 
     def get_vcg_prices(self, k) -> int:
+        """
+        Calculate VCG prices for 2 buyers. Requires fb_values and sb_values to be given.
+        """
         # forward utilities
         ffu = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
         sfu = np.zeros([self.num_items + 1, self.num_items + 1], dtype=int)
@@ -82,7 +72,7 @@ class AuctionCalculator:
 
         reachable = np.zeros([self.num_items + 1, self.num_items + 1], dtype=bool)
         lowest = np.full([self.num_items + 1, self.num_items + 1], np.inf)
-        self.get_vcg_optimal_welfare(possible_path, f_prices, s_prices, lowest, reachable)
+        self.get_vcg_worst_welfare(possible_path, f_prices, s_prices, lowest, reachable)
 
         min_welfare = math.inf
         for j in range(self.num_items + 1):
@@ -94,7 +84,10 @@ class AuctionCalculator:
         #print(f'Welfare is {max_welfare}, buyer 1 gets {self.num_items - max_index} items and buyer 2 gets {max_index} items')
         return min_welfare
 
-    def get_vcg_optimal_welfare(self, possible_path, f_prices, s_prices, lowest, reachable):
+    def get_vcg_worst_welfare(self, possible_path, f_prices, s_prices, lowest, reachable):
+        """
+        Calculate worst efficiency for 2 buyer auction of all equilibria.
+        """
         reachable[0][0] = True
         for i in range(0, self.num_items - self.k + 1, self.k):
             for j in range(i + 1):
@@ -109,6 +102,9 @@ class AuctionCalculator:
         return True
 
     def get_vcg_prices_for_3_or_more_buyers(self, k) -> int:
+        """
+        Calculate VCG prices for 3 or more buyers. Requires values to be given.
+        """
         # amount of permutations
         permutations = self.table[self.num_buyers][self.num_items]
 
@@ -180,7 +176,7 @@ class AuctionCalculator:
 
         reachable = np.zeros([self.num_items + 1, permutations], dtype=bool)
         lowest = np.full([self.num_items + 1, permutations], np.inf)
-        self.get_vcg_optimal_welfare_for_3_or_more_buyers(possible_path, prices, lowest, reachable)
+        self.get_vcg_worst_welfare_for_3_or_more_buyers(possible_path, prices, lowest, reachable)
 
         min_welfare = math.inf
         for j in range(permutations):
@@ -198,7 +194,10 @@ class AuctionCalculator:
         #print(min_welfare)
         return min_welfare
 
-    def get_vcg_optimal_welfare_for_3_or_more_buyers(self, possible_path, prices, lowest, reachable):
+    def get_vcg_worst_welfare_for_3_or_more_buyers(self, possible_path, prices, lowest, reachable):
+        """
+        Calculate worst efficiency for 3 or more buyer auction of all equilibria.
+        """
         reachable[0][0] = True
         for i in range(0, self.num_items - self.k + 1, self.k):
             for j in range(max(1, self.table[self.num_buyers][i])):
@@ -210,13 +209,10 @@ class AuctionCalculator:
                     if reachable[i][j] and possible_path[i][j][a]:
                         price = sum(prices[i][j])
                         if lowest[i][j] < price:
-                            AuctionCalculator.dpa_false += 1
                             return False
                         reachable[i + self.k][next_index] = True
                         if lowest[i + self.k][next_index] > price:
                             lowest[i + self.k][next_index] = price
-        AuctionCalculator.dpa_true += 1
-        print(AuctionCalculator.dpa_false / (AuctionCalculator.dpa_true + AuctionCalculator.dpa_false))
         return True
 
     def build_combinatorial_table(self):
